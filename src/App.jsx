@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense, lazy } from "react";
 import { Users } from "./users";
 import "./App.css";
 
@@ -8,12 +8,17 @@ function App() {
   const [users, setUsers] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
 
+  const [componentToLoad, setComponentToLoad] = useState(null);
+
   useEffect(() => {
     setUsers(Users);
   }, []);
 
-  const totalNumOfUsers = users.length;
+  const handleLoadComponent = (component) => {
+    setComponentToLoad(component);
+  };
 
+  const totalNumOfUsers = users.length;
   //we want decide on how many items we want to show per page
   //with that figure out how many pages we get
   const totalNumOfPages = Math.ceil(totalNumOfUsers / 20);
@@ -40,8 +45,36 @@ function App() {
       prevPage < totalNumOfPages ? prevPage + 1 : prevPage
     );
   }
+
+  // Dynamically import components based on user selection
+  const loadComponent = (component) => {
+    switch (component) {
+      case "Chart":
+        return lazy(() => import("./Chart"));
+      case "Form":
+        return lazy(() => import("./Form"));
+      case "Gallery":
+        return lazy(() => import("./Gallery"));
+      default:
+        return null;
+    }
+  };
+
+  const LoadedComponent = loadComponent(componentToLoad);
   return (
     <div>
+      <button onClick={() => handleLoadComponent("Chart")}>Load Chart</button>
+      <button onClick={() => handleLoadComponent("Form")}>Load Form</button>
+      <button onClick={() => handleLoadComponent("Gallery")}>
+        Load Gallery
+      </button>
+      {/* Use Suspense to show a fallback while loading */}
+      {LoadedComponent && (
+        <Suspense fallback={<div>Loading component...</div>}>
+          <LoadedComponent />
+        </Suspense>
+      )}
+
       {showUsersOnCurrentPage.map((user, index) => (
         <div key={user.id}>{user.id + " : " + user.first_name}</div>
       ))}
